@@ -1,0 +1,882 @@
+---
+title: "Final_Project_Report"
+author: "Binaya Shrestha, Dongming Li, Molly Buckler, Armando Castillo, John Langenwalter, Muhamad-Imran-Bin Maszeri"
+date: "11/21/2020"
+output: html_document
+---
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+library(ggplot2)
+library(tidyverse)
+library(dplyr)
+library(lubridate)
+library(readxl)
+library(rvest)
+library(scales)
+library(reshape)
+library(RColorBrewer)
+library(stringr)
+library(ggpubr)
+setwd(getwd())
+```
+
+## Introduction
+
+* We are exploring two separate data sets and have combined the findings between them to see if there is any correlation between the two.
+
+* Application
+
+  * We chose lyme disease and weather data sets because it is known that lyme disease is carried by ticks. There may be some correlation between the disease and weather patterns such as precipitation since tick are exposed to the weather given their habitat and it could have an effect on the ticks population each year.
+  
+***
+
+### Lyme Disease Background
+
+__According to the CDC:__
+
+* Lyme disease is a deer tick borne illness
+
+* Lyme disease is the most common vector-borne disease in the United States
+
+* Ticks usually lives outdoors, in tall grass or forest  
+
+* Transferred from tick to mammals through their bites
+
+* Lyme disease is a bacteria 
+
+* Symptoms can include flu like symptoms as well as a bulls eye like rash
+
+***
+
+### Data Sets
+
+* __Lyme Disease from 1992 - 2011__
+  
+  * Data set obtained from the CDC in csv format
+  
+  * Contains Lyme disease case data for counties inside the US from 1992 to 2011
+  
+  * The years are split up into 5 year increments
+
+* __Global Historical Climentallegy daily__
+
+  * Data sets obtained from NOAA in csv format and in txt format
+
+  * Each csv file had the temperature and precipitation for each station every day for one year
+  
+  * Had to get the csv files for 1992 to 2011
+  
+  * The text file included data about the stations in the csv files, it includes which country the station is in, as well as which state the station is in
+
+* __CDC Data Lyme Disease by Region 2007-2011__
+
+  * Data is initially in the form of pdf files separated in each year in a 52 week format
+
+  * Data is scraped from pdf files in each year into a csv format
+                    
+***
+
+## The pipeline for obtaining and cleaning the dataset
+
+#### cleaning of the stations txt file
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+stations <- read.delim("ghcnd-stations.txt", header = FALSE, quote = "", row.names = NULL, 
+                 stringsAsFactors = FALSE)
+df <- data.frame(stations)
+
+col1 <- df %>% mutate(country = substring(V1, 1, 2))
+col1 <- col1 %>% mutate(state = substring(V1, 39, 40))
+col1 <- col1 %>% mutate(code1 = substring(V1, 1, 11))
+col1 <- col1 %>% mutate(code2 = substring(V1, 3, 11))
+col1 <- col1 %>% select(2:5)
+confilt <- filter(col1, country == "US" )
+head(confilt)
+
+```
+
+#### Cleaning of prec data
+
+#### Adding the text file to the dataframe
+
+#### Merging csv files and grouping by the state by the info in txt file
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+library(tidyverse)
+
+T1992 <- read.csv("mP1992.csv")
+T1993 <- read.csv("mP1993.csv")
+T1994 <- read.csv("mP1994.csv")
+T1995 <- read.csv("mP1995.csv")
+T1996 <- read.csv("mP1996.csv")
+T1997 <- read.csv("mP1997.csv")
+T1998 <- read.csv("mP1998.csv")
+T1999 <- read.csv("mP1999.csv")
+T2000 <- read.csv("mP2000.csv")
+T2001 <- read.csv("mP2001.csv")
+T2002 <- read.csv("mP2002.csv")
+T2003 <- read.csv("mP2003.csv")
+T2004 <- read.csv("mP2004.csv")
+T2005 <- read.csv("mP2005.csv")
+T2006 <- read.csv("mP2006.csv")
+T2007 <- read.csv("mP2007.csv")
+T2008 <- read.csv("mP2008.csv")
+T2009 <- read.csv("mP2009.csv")
+T2010 <- read.csv("mP2010.csv")
+T2011 <- read.csv("mP2011.csv")
+states <- confilt
+
+head(states)
+
+m9293 <- merge(T1992, T1993,by=c("code"))
+m9394 <- merge(m9293, T1994,by=c("code"))
+m9495 <- merge(m9394, T1995,by=c("code"))
+m9596 <- merge(m9495, T1996,by=c("code"))
+m9697 <- merge(m9596, T1997,by=c("code"))
+m9798 <- merge(m9697, T1998,by=c("code"))
+m9899 <- merge(m9798, T1999,by=c("code"))
+m9900 <- merge(m9899, T2000,by=c("code"))
+m0001 <- merge(m9900, T2001,by=c("code"))
+m0102 <- merge(m0001, T2002,by=c("code"))
+m0203 <- merge(m0102, T2003,by=c("code"))
+m0304 <- merge(m0203, T2004,by=c("code"))
+m0405 <- merge(m0304, T2005,by=c("code"))
+m0506 <- merge(m0405, T2006,by=c("code"))
+m0607 <- merge(m0506, T2007,by=c("code"))
+m0708 <- merge(m0607, T2008,by=c("code"))
+m0809 <- merge(m0708, T2009,by=c("code"))
+m0910 <- merge(m0809, T2010,by=c("code"))
+
+finalTemp <- merge(m0910, T2011,by=c("code"))
+head(finalTemp)
+finalTemp <- finalTemp %>% dplyr::rename(code1 = code)
+finalWStatePrec <- merge(finalTemp, states,by=c("code1"))
+
+head(finalWStatePrec)
+
+
+finalWStatePrec <- finalWStatePrec %>% group_by(state) %>% summarise(across(prec1992:prec2011, mean))
+
+head(finalWStatePrec)
+```
+
+#### Cleaning of temp data
+
+#### Adding the text file to the dataframe
+
+#### Merging csv files and grouping by the state by the info in txt file
+
+#### Changing the temp data from 10th of a degree celcius to feriegnhight
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+T1992 <- read.csv("mT1992.csv")
+T1993 <- read.csv("mT1993.csv")
+T1994 <- read.csv("mT1994.csv")
+T1995 <- read.csv("mT1995.csv")
+T1996 <- read.csv("mT1996.csv")
+T1997 <- read.csv("mT1997.csv")
+T1998 <- read.csv("mT1998.csv")
+T1999 <- read.csv("mT1999.csv")
+T2000 <- read.csv("mT2000.csv")
+T2001 <- read.csv("mT2001.csv")
+T2002 <- read.csv("mT2002.csv")
+T2003 <- read.csv("mT2003.csv")
+T2004 <- read.csv("mT2004.csv")
+T2005 <- read.csv("mT2005.csv")
+T2006 <- read.csv("mT2006.csv")
+T2007 <- read.csv("mT2007.csv")
+T2008 <- read.csv("mT2008.csv")
+T2009 <- read.csv("mT2009.csv")
+T2010 <- read.csv("mT2010.csv")
+T2011 <- read.csv("mT2011.csv")
+states <- confilt
+
+head(states)
+
+m9293 <- merge(T1992, T1993,by=c("code"))
+m9394 <- merge(m9293, T1994,by=c("code"))
+m9495 <- merge(m9394, T1995,by=c("code"))
+m9596 <- merge(m9495, T1996,by=c("code"))
+m9697 <- merge(m9596, T1997,by=c("code"))
+m9798 <- merge(m9697, T1998,by=c("code"))
+m9899 <- merge(m9798, T1999,by=c("code"))
+m9900 <- merge(m9899, T2000,by=c("code"))
+m0001 <- merge(m9900, T2001,by=c("code"))
+m0102 <- merge(m0001, T2002,by=c("code"))
+m0203 <- merge(m0102, T2003,by=c("code"))
+m0304 <- merge(m0203, T2004,by=c("code"))
+m0405 <- merge(m0304, T2005,by=c("code"))
+m0506 <- merge(m0405, T2006,by=c("code"))
+m0607 <- merge(m0506, T2007,by=c("code"))
+m0708 <- merge(m0607, T2008,by=c("code"))
+m0809 <- merge(m0708, T2009,by=c("code"))
+m0910 <- merge(m0809, T2010,by=c("code"))
+finalTemp <- merge(m0910, T2011,by=c("code"))
+finalTemp <- finalTemp %>% dplyr::rename(code1 = code)
+finalWState <- merge(finalTemp, states,by=c("code1"))
+
+head(finalWState)
+
+finalWState <- finalWState %>% mutate(temp1992 = ((temp1992/10) * 9/5) + 32)
+finalWState <- finalWState %>% mutate(temp1993 = ((temp1993/10) * 9/5) + 32)
+finalWState <- finalWState %>% mutate(temp1994 = ((temp1994/10) * 9/5) + 32)
+finalWState <- finalWState %>% mutate(temp1995 = ((temp1995/10) * 9/5) + 32)
+finalWState <- finalWState %>% mutate(temp1996 = ((temp1996/10) * 9/5) + 32)
+finalWState <- finalWState %>% mutate(temp1997 = ((temp1997/10) * 9/5) + 32)
+finalWState <- finalWState %>% mutate(temp1998 = ((temp1998/10) * 9/5) + 32)
+finalWState <- finalWState %>% mutate(temp1999 = ((temp1999/10) * 9/5) + 32)
+finalWState <- finalWState %>% mutate(temp2000 = ((temp2000/10) * 9/5) + 32)
+finalWState <- finalWState %>% mutate(temp2001 = ((temp2001/10) * 9/5) + 32)
+finalWState <- finalWState %>% mutate(temp2002 = ((temp2002/10) * 9/5) + 32)
+finalWState <- finalWState %>% mutate(temp2003 = ((temp2003/10) * 9/5) + 32)
+finalWState <- finalWState %>% mutate(temp2004 = ((temp2004/10) * 9/5) + 32)
+finalWState <- finalWState %>% mutate(temp2005 = ((temp2005/10) * 9/5) + 32)
+finalWState <- finalWState %>% mutate(temp2006 = ((temp2006/10) * 9/5) + 32)
+finalWState <- finalWState %>% mutate(temp2007 = ((temp2007/10) * 9/5) + 32)
+finalWState <- finalWState %>% mutate(temp2008 = ((temp2008/10) * 9/5) + 32)
+finalWState <- finalWState %>% mutate(temp2009 = ((temp2009/10) * 9/5) + 32)
+finalWState <- finalWState %>% mutate(temp2010 = ((temp2010/10) * 9/5) + 32)
+finalWStateTemp <- finalWState %>% mutate(temp2011 = ((temp2011/10) * 9/5) + 32)
+
+head(finalWStateTemp)
+
+finalWStateTemp <- finalWState %>% group_by(state) %>% summarise(across(temp1992:temp2011, mean))
+
+head(finalWStateTemp)
+                                       
+```
+
+#### Combining temp, lyme and prec
+
+#### Seperating the years in prec dataframe
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+lyme <- read.csv("LymeDisease_9211_county.csv")
+abb <- read.csv("stateWabbrev.csv")
+
+prec <- finalWStatePrec
+prec1 <- prec %>% select(1)
+prec9296 <- prec %>% select(2:6)
+prec9296 <- rowMeans(prec9296)
+prec9701 <- prec %>% select(7:11)
+prec9701 <- rowMeans(prec9701)
+prec0206 <- prec %>% select(12:16)
+prec0206 <- rowMeans(prec0206)
+prec0711 <- prec %>% select(17:21)
+prec0711 <- rowMeans(prec0711)
+prec2 <- cbind(prec1, prec9296, prec9701, prec0206, prec0711)
+head(prec2)
+```
+
+#### Seperating the years in the temp data frame
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+temp <- finalWStateTemp
+temp1 <- temp %>% select(1)
+temp9296 <- temp %>% select(2:6)
+temp9296 <- rowMeans(temp9296)
+temp9701 <- temp %>% select(7:11)
+temp9701 <- rowMeans(temp9701)
+temp0206 <- temp %>% select(12:16)
+temp0206 <- rowMeans(temp0206)
+temp0711 <- temp %>% select(17:21)
+temp0711 <- rowMeans(temp0711)
+temp2 <- cbind(temp1, temp9296, temp9701, temp0206, temp0711)
+head(temp2)
+```
+
+#### Cleaning the lyme disease data frame
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+lyme3 <- lyme %>% select(3)
+lyme5 <- lyme %>% select(5:8)
+comblyme <- cbind(lyme3,lyme5)
+
+relyme <- comblyme %>% dplyr::rename(state = StateName,  lyme9296 = ConfirmedCount_1992_1996, lyme9701 = ConfirmedCount_1997_2001, lyme0206 = ConfirmedCount_2002_2006, lyme0711 = ConfirmedCount_2007_2011)
+
+relyme$lyme9296 <- as.numeric(relyme$lyme9296)
+relyme$lyme9701 <- as.numeric(relyme$lyme9701)
+relyme$lyme0206 <- as.numeric(relyme$lyme0206)
+relyme$lyme0711 <- as.numeric(relyme$lyme0711)
+head(relyme)
+
+firstlyme <- relyme %>% select(1, 2)
+firstNa <- firstlyme %>% drop_na()
+head(firstNa)
+aglyme1 <- firstNa %>% group_by(state) %>% summarise_all(funs(sum))
+
+secondlyme <- relyme %>% select(1, 3)
+secondNa <- secondlyme %>% drop_na()
+aglyme2 <- secondNa %>% group_by(state) %>% summarise_all(funs(sum))
+
+thirdlyme <- relyme %>% select(1, 4)
+thirdNa <- thirdlyme %>% drop_na()
+aglyme3 <- thirdNa %>% group_by(state) %>% summarise_all(funs(sum))
+
+fourthlyme <- relyme %>% select(1, 5)
+fourthNa <- fourthlyme %>% drop_na()
+aglyme4 <- fourthNa %>% group_by(state) %>% summarise_all(funs(sum))
+
+comb <- merge(aglyme1, aglyme2,by=c("state"))
+comb <- merge(comb, aglyme3,by=c("state"))
+comb <- merge(comb, aglyme4,by=c("state"))
+
+head(comb)
+```
+
+#### Adding state abbr to lyme disease
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+#abb
+newLyme <- comb %>% dplyr::rename(full = state)
+head(newLyme)
+newLyme <- newLyme %>% add_row(full = "Alaska", lyme9296 = 0, lyme9701 = 0, lyme0206 = 0, lyme0711 = 0)
+newLyme <- newLyme %>% add_row(full = "Hawaii", lyme9296 = 0, lyme9701 = 0, lyme0206 = 0, lyme0711 = 0)
+newLyme <- newLyme %>% add_row(full = "Montana", lyme9296 = 0, lyme9701 = 0, lyme0206 = 0, lyme0711 = 0)
+newLyme <- newLyme[-c(8),] 
+newLyme <- merge(newLyme, abb,by=c("full"))
+head(newLyme)
+```
+
+#### Combining 3 data sets
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+LymeTemp <- merge(newLyme, temp2,by=c("state"))
+LymeTempPrec <- merge(LymeTemp, prec2,by=c("state"))
+head(LymeTempPrec)
+```
+
+
+## Exploratory Analysis
+
+### Lyme Disease Changes from 1992-2011
+
+Although temperature And precipitation remained roughly the same, lyme disease had a steady increase from 1992-2011
+
+There is a steady increase of about 500 more new cases each 5 years.
+
+__Averages cases__
+
+* 1992-96: 1186.78
+
+* 1997-01: 1611.50
+
+* 2002-06: 2158.64
+
+* 2007-11: 2658.22
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+LymeTempPrec<- read_csv("./LymeTempPrec3.csv")
+means<-LymeTempPrec %>%
+  summarise_at(vars(-state, -full), funs(mean(., na.rm=TRUE)))
+means<- means %>%
+  pivot_longer(everything(),names_to = "Measure", values_to = "Average")
+avgLyme <- means %>% filter(str_detect(Measure, "^lyme"))
+
+avgLyme$Measure <- as.factor(avgLyme$Measure)
+avgLyme$Measure <- factor(avgLyme$Measure, levels = c("lyme9296", "lyme9701", "lyme0206", "lyme0711"))
+ggplot(avgLyme, aes(x=Measure, y=Average)) +
+  geom_bar(stat = "identity") + ggtitle("Average Lyme Disease Cases for Each Period")
+```
+
+__Total number of cases__
+
+* 1992-96: 59,339
+
+* 1997-01: 80,575
+
+* 2002-06: 107,932
+
+* 2007-11: 132,911
+
+* Total = 380,757
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+sums<-LymeTempPrec %>%
+  summarise_at(vars(-state, -full), funs(sum(., na.rm=TRUE)))
+sums<- sums %>%
+  pivot_longer(everything(),names_to = "Measure", values_to = "Total")
+
+sumLyme <- sums %>% filter(str_detect(Measure, "^lyme"))
+sumLyme$Measure <- as.factor(avgLyme$Measure)
+sumLyme$Measure <- factor(sumLyme$Measure, levels = c("lyme9296", "lyme9701", "lyme0206", "lyme0711"))
+ggplot(sumLyme, aes(x=Measure, y=Total)) +
+  geom_bar(stat = "identity") + ggtitle("Total Number of Cases for Each Year")
+```
+
+The average temperature nationwide for each 5 year block remained roughly the same
+
+__Average temperature__
+
+* 1992-96: 62.90
+
+* 1997-01: 63.94
+
+* 2002-06: 63.82
+
+* 2007-11: 63.27
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+avgTemp <- means %>%
+  filter(str_detect(Measure, "^temp"))
+ggplot(data = avgTemp, aes(x=Measure, y=Average)) + geom_bar(stat = "identity") + ggtitle("Average Temperature for Each Period")
+```
+
+The average precipitation nationwide for each 5 year block remained roughly the same
+
+__Average precipitation__
+
+* 1992-96: 28.23
+
+* 1997-01: 26.37
+
+* 2002-06: 27.90
+
+* 2007-11: 28.70
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+avgPrec <- means %>%
+  filter(str_detect(Measure, "^prec"))
+ggplot(data = avgPrec, aes(x=Measure, y=Average)) + geom_bar(stat = "identity") + ggtitle("Average Precipitation for Each Period")
+```
+
+***
+
+### Lyme Disease Affected States
+
+Here we can look at which states were most affected by Lyme disease.
+
+From the maps below we can start to see that the upper right region of the US has a high amount of cases and as we move from 1999 to 2011 the disease is spreading towards the northern central states.
+
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
+#---Get And Clean Data---
+
+  #---Lyme Disease First Data Set---
+    LDFfile <- "./Data sets/LymeDisease_9211_county (1).csv"
+    LDdata <- read.csv(LDFfile)
+    LDdata[is.na(LDdata)] <- 0
+    LDdata$StateCode <- as.numeric(LDdata$StateCode)
+    LDdata$CountyCode <- as.numeric(LDdata$CountyCode)
+    LDdata$StateName <- tolower(LDdata$StateName)
+    LDdata$CountyName <- tolower(LDdata$CountyName)
+    LDdata$CountyName <- str_remove(LDdata$CountyName, " county")
+    
+    LDdataStates <- LDdata %>% group_by(StateName) %>% summarise(
+      ConfirmedCount_1992_1996 = sum(ConfirmedCount_1992_1996),
+      ConfirmedCount_1997_2001 = sum(ConfirmedCount_1997_2001),
+      ConfirmedCount_2002_2006 = sum(ConfirmedCount_2002_2006),
+      ConfirmedCount_2007_2011 = sum(ConfirmedCount_2007_2011))
+    
+#---Get State Data For Maps
+  states <- map_data("state")
+  county <- map_data("county")
+
+#---Graph Data For Lyme Disease First Data Set---
+LDdataG <- LDdataStates
+LDdataG <- LDdataG %>% pivot_longer(names_to = "ConfirmedCount", values_to = "Count", cols = c(
+  ConfirmedCount_1992_1996, 
+  ConfirmedCount_1997_2001, 
+  ConfirmedCount_2002_2006, 
+  ConfirmedCount_2007_2011))
+```
+
+```{r, message=FALSE, warning=FALSE, echo=FALSE}
+#---Map Data For Lyme Disease Data Set---
+  LDdataM <- left_join(LDdataStates, states, by=c("StateName" = "region"))
+  
+  LDdataM %>% ggplot(aes(x = long, y = lat, group=group, fill = ConfirmedCount_1992_1996)) + geom_polygon(color = "grey") + coord_map() + ggtitle("Map of Lyme Disiease from 1992 to 1996")
+  
+  LDdataM %>% ggplot(aes(x = long, y = lat, group=group, fill = ConfirmedCount_1997_2001)) + geom_polygon(color = "grey") + coord_map() + ggtitle("Map of Lyme Disiease from 1997 to 2001")
+  
+  LDdataM %>% ggplot(aes(x = long, y = lat, group=group, fill = ConfirmedCount_2002_2006)) + geom_polygon(color = "grey") + coord_map() + ggtitle("Map of Lyme Disiease from 2002 to 2006")
+  
+  LDdataM %>% ggplot(aes(x = long, y = lat, group=group, fill = ConfirmedCount_2007_2011)) + geom_polygon(color = "grey") + coord_map() + ggtitle("Map of Lyme Disiease from 2007 to 2011")
+
+```
+
+
+#### __Cases from 1992-1996__
+
+* New York had the most amount of lyme disease cases with 21,205 cases.
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+#---1992 to 1996---
+    LDdataG %>% filter(ConfirmedCount == "ConfirmedCount_1992_1996") %>% ggplot(aes(x = StateName, y = Count)) + geom_bar(position = 'dodge', stat='identity') + theme(axis.text.x=element_text(angle = -90, vjust = 0.5)) + ggtitle("Confirmed Cases from 1992-1996") + geom_text(aes(label=Count), position=position_dodge(width=0.9), vjust=-0.25, size = 2)
+```
+
+
+#### __Cases from 1997-2001__
+
+* New York had the most amount of lyme disease cases and ended up with slightly few cases at 20,781.
+
+* Connecticut saw a massive rise in cases from 9,792 to 16,316 cases.
+
+* Pennsylvania and New Jersey also saw a significant rise in cases.
+
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+#---1997 to 2001---
+    LDdataG %>% filter(ConfirmedCount == "ConfirmedCount_1997_2001") %>% ggplot(aes(x = StateName, y = Count)) + geom_bar(position = 'dodge', stat='identity') + theme(axis.text.x=element_text(angle = -90, vjust = 0.5)) + ggtitle("Confirmed Cases from 1997-2001") + geom_text(aes(label=Count), position=position_dodge(width=0.9), vjust=-0.25, size = 2)
+```
+
+
+#### __Cases from 2002-2006__
+
+* New York had the most amount of lyme disease cases with 26,059 cases.
+
+* Generally most states saw an increase in lyme disease cases or stated the same with the exception of Connecticut which decreased from 16,316 to 10,980.
+
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+#---2002 to 2006---
+    LDdataG %>% filter(ConfirmedCount == "ConfirmedCount_2002_2006") %>% ggplot(aes(x = StateName, y = Count)) + geom_bar(position = 'dodge', stat='identity') + theme(axis.text.x=element_text(angle = -90, vjust = 0.5)) + ggtitle("Confirmed Cases from 2002-2006") + geom_text(aes(label=Count), position=position_dodge(width=0.9), vjust=-0.25, size = 2)
+```
+
+
+#### __Cases from 2007-2011__
+
+* Pennsylvania had the most amount of lyme disease cases with 20,799 cases.
+
+* More states with higher counts lyme disease cases
+
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+#---2007 to 2011---
+    LDdataG %>% filter(ConfirmedCount == "ConfirmedCount_2007_2011") %>% ggplot(aes(x = StateName, y = Count)) + geom_bar(position = 'dodge', stat='identity') + theme(axis.text.x=element_text(angle = -90, vjust = 0.5)) + ggtitle("Confirmed Cases from 2007-2011") + geom_text(aes(label=Count), position=position_dodge(width=0.9), vjust=-0.25, size = 2)
+```
+
+***
+
+### Lyme Disease Affected Region from 2007-2011
+
+We can see that the distribution of lyme disease is mainly around the Mid Atlantic and New England region. These regions are part of the north eastern part of the US. This finding matches with the map data shown previously.
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+#stack bar for region
+region <- read.csv("cumLymeReport_2007_2011_byRegion.csv")
+region <- region %>%
+  mutate(area=ï..Areas) %>%
+  select(!ï..Areas)
+
+regionpiv <- region %>%
+  pivot_longer(!area, names_to="cumu", values_to="value")
+#str(regionpiv)
+
+regionpiv %>%
+  ggplot(aes(fill=cumu, y=value, x=reorder(area, value))) + 
+    geom_bar(position="stack", stat="identity") + coord_flip() + labs(title="52-week Cumulative of Lyme Disease cases by US Region", y="Total cases", x="Region") + scale_fill_discrete(name = "Cumulative cases per year", labels = c("2007", "2008", "2009", "2010", "2011"))
+```
+
+***
+
+### Lyme Disease Affected State from 2007-2011
+
+* States that are affected are align with the CDC region data
+
+* States are mostly located northeast or north of the Midwest
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+#for state
+USA_states <- map_data("state")
+sName <- USA_states %>%
+  mutate(region=str_to_title(USA_states$region))
+
+temp2 <- read.csv("LymeTempPrec2.csv")
+ltp <- temp2 %>%
+  mutate(region=full) %>%
+  select(!c('full'))
+
+ltp2 <- ltp %>%
+  filter(lyme0711>1000)
+
+ltpmap <- ltp %>% left_join(sName, by="region")
+ltp2map <- ltp2 %>% left_join(sName, by="region")
+sText <- ltp2map %>% group_by(region, state) %>% summarise(long=mean(long), lat=mean(lat))
+  
+ggplot() + geom_path(data=ltpmap,
+                        aes(x=long, y=lat, group=group)) +
+  geom_polygon(data=ltp2map,
+                aes(x=long, y=lat, group=group, fill=lyme0711)) +
+  scale_fill_continuous(low='tomato', high='darkred', guide='colorbar') +
+  coord_map() +
+  geom_text(data=sText, 
+            aes(x=long, y=lat, label=state), color='black') +
+  labs(title="US States With > 1000 Cases", fill="Total Cases")
+```
+
+***
+
+### Lyme Disease Affected Counties from 2007-2011
+
+* Counties in the Northeast are located close to the ocean
+
+* Counties in North Central Midwest are mostly located on the state capital where most people are located
+
+* Same can be said with Northeast states, places with high population
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+#for county
+
+USA_counties <- map_data("county")
+cName <- USA_counties %>%
+  mutate(subregion=str_to_title(subregion))
+
+count1 <- read.csv("Data Sets/LymeDisease_9211_county (1).csv")
+countClean <- count1 %>% 
+  separate(CountyName, c("subregion", "county")) %>%
+  filter(!CountyCode==0) %>%
+  mutate(county=str_replace(county, "County", "")) %>%
+  unite('subregion',subregion:county,sep=" ") %>%
+  mutate(subregion=trimws(gsub("\\s+", " ", subregion))) %>%
+  mutate(c711=replace_na(ConfirmedCount_2007_2011, 0))
+
+countCleanSum <- countClean %>%
+  group_by(subregion) %>%
+  summarise(c711=sum(c711)) %>%
+  arrange(desc(c711))
+
+countCleanMap <- countCleanSum %>% 
+  left_join(cName, by='subregion') %>% 
+  filter(c711>100)
+
+countCleanMap <- countCleanMap %>%
+  filter(region %in% c('minnesota', 'wisconsin', 'virginia', 'maryland', 'pennsylvania', 'new jersey', 'new york', 'connecticut', 'massachusetts', 'maine', 'vermont', 'new hampshire', 'delaware'))
+
+ggplot() + geom_path(data=ltp2map,
+                        aes(x=long, y=lat, group=group)) +
+  geom_polygon(data=countCleanMap,
+                aes(x=long, y=lat, group=group, fill=c711), color='black') +
+  scale_fill_continuous(low='tomato', high='darkred', guide='colorbar') +
+  coord_map() +
+  labs(title="US Counties With > 100 Cases In The Northeast Central Region", fill="Total cases")
+
+```
+
+***
+
+## Temperature Difference in US between 2007-2011
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+ltp %>%
+  left_join(sName, by="region") %>%
+  ggplot(aes(x=long, y=lat, fill=temp0711)) + geom_polygon(aes(group=group)) + coord_map() + 
+  scale_fill_continuous(low='tan1', high='darkred', guide='colorbar') +
+  labs(title="Temperature Levels in US", fill="Temp (F)")
+```  
+
+***
+
+### The change of average temperature in the U.S. and each states may affect the rate of Lymn disease.
+
+The average temperature for each state varies by a lot.
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+Temp<-read.csv("AveTempState.csv")
+Temp2<-Temp %>%
+  group_by(State)%>%
+  summarise(Ave_Temp=mean(Ave_Temp))
+ggplot(Temp2,aes(y=State,weight=Ave_Temp)) + geom_bar() + 
+  labs(title = "Average Temperature of 50 states over 20 years",x="Temperature",y="State") + 
+  theme(plot.title = element_text(hjust = 0.5),axis.title.x = element_text(face = "bold"),axis.title.y = element_text(face = "bold"),axis.text.y = element_text())
+
+```
+
+***
+
+### Average Temperature over 20 years
+
+The average temperature in the United States has been between 60 and 65 degrees Fahrenheit over 20 years.
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+Temp3<- Temp%>%
+  group_by(Year)%>%
+  summarise(Ave_Temp=mean(Ave_Temp))
+ggplot(Temp3,aes(x=Year,weight=Ave_Temp)) + geom_bar() +
+  labs(title = "Average Temperature over 20 years") + theme(plot.title = element_text(hjust = 0.5))
+```
+
+***
+
+### Temperature Changes from 1992-2011
+
+Here we can see how has the average temperature in the United States has changed over 20 years.
+
+Although the average temperature in these states may rise or fall each year, the overall trend of average temperature is still a gradual upward trend.
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+ggplot(Temp3,aes(x=Year,y=Ave_Temp)) + geom_point(color="black") + stat_smooth(method = "lm", col = "red")+
+  labs(title = "Average Temperature changes over 20 years") + theme(plot.title = element_text(hjust = 0.5))
+```
+
+***
+
+### Amount of Lyme Disease for Different Temperatures
+
+Here we can see the correlation between Temp and Lymn disease.
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+
+library(ggplot2)
+library(tidyverse)
+library(dplyr)
+library(lubridate)
+library(readxl)
+
+honk <-read.csv("LymeTempPrec.csv")
+
+d9296 <- ggplot(aes(x = temp9296, y = lyme9296
+           ), data=honk) + geom_point() + ggtitle('temp vs lyme disease correlation 1992-1996') + xlab('temperature') + ylab('lyme disease cases')
+d9296
+
+d9701 <- ggplot(aes(x = temp9701, y = lyme9701
+           ), data=honk) + geom_point() + ggtitle('temp vs lyme disease correlation 1997-2001') + xlab('temperature') + ylab('lyme disease cases')
+d9701
+
+d0206 <- ggplot(aes(x = temp0206, y = lyme0206
+           ), data=honk) + geom_point() +  ggtitle('temp vs lyme disease correlation 2002-2006')  + xlab('temperature') + ylab('lyme disease cases')
+d0206
+
+
+d0711 <- ggplot(aes(x = temp0711, y = lyme0711
+           ), data=honk) + geom_point() +  ggtitle('temp vs lyme disease correlation 2007-2011')  + xlab('temperature') + ylab('lyme disease cases')
+d0711
+
+
+```
+
+***
+
+### Scatterplot to show Peak temperatures for lyme disease cases
+
+We can see that when the above graphs are combined together that Lyme disease typically happens when the temperature is around the range of 60 degrees.
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+library(tidyverse)
+LymeTempPrec2<- LymeTempPrec %>%
+  select(full:temp0711)
+new <- LymeTempPrec2 %>%
+  pivot_longer(lyme9296:temp0711, names_to = "measure", values_to = "value")
+new$date<-substr(new$measure, nchar(new$measure) - 3, nchar(new$measure))
+new$measure <- substr(new$measure, 1, 4)
+new <- new %>%
+  pivot_wider(names_from = "measure", values_from = "value")
+new %>%
+  ggplot(aes(x=temp, y=lyme, color=date)) + geom_point()
+```
+
+*** 
+
+### Association of Lyme disease to changes in Temperature
+
+We found that between 55-65 fahrenheit are where most of the lyme disease cases start to peak. We modeled lyme disease cases versus temperature throughout the years 1992-2011. The pattern was consistent through the years the the avg temperate of 60 f was very dangerous due to the amount of high cases of lyme disease.
+
+***
+
+### Precipitation Difference in US between 2007-2011
+
+* Precipitation in the Northeast are higher than the others
+
+* Indicates that the disease is carried by ticks that favor higher precipitation
+
+* Also means good humidity
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+ltp %>%
+  left_join(sName, by="region") %>%
+  ggplot(aes(x=long, y=lat, fill=prec0711)) + geom_polygon(aes(group=group)) + coord_map() +
+  scale_fill_continuous(low='lightcyan2', high='blue', guide='colorbar') +
+  labs(title="Precipitation Levels in US", fill="Prec (inch)")
+```
+
+
+***
+
+### Average Precipitation
+
+The average precipitation does not change very much from each year but there are several peaks in certain years such as 1996 and 2011.
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+
+prec3 <- pivot_longer(prec, cols = starts_with("prec"), names_to = "years", values_to = "precipitation")
+
+precptationAvg <- prec3 %>% group_by(years) %>% summarise(precipitation = mean(precipitation))
+
+precptationAvg$years <- str_remove(precptationAvg$years, "prec")
+
+ggplot(data = precptationAvg, aes(x = years, weight = precipitation)) + geom_bar(color = "black", fill = "grey") + theme(axis.text.x=element_text(angle = -45, vjust = 0.5)) + ylab("Avg. Prec. per state (tenths of mm)")
+
+```
+
+
+***
+
+### Correlation between Lyme disease and precipitation
+
+The p- value is very large so the correlation is not significant
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+lyme <- LymeTempPrec
+#head(lyme)
+prec1 <- finalWStatePrec
+```
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+justLyme <- lyme %>% select(3, 6)
+allLyme <- rowMeans(justLyme)
+
+justtemp <- lyme %>% select(7, 10)
+alltemp <- rowMeans(justtemp)
+
+justprec <- lyme %>% select(11, 14)
+allprec <- rowMeans(justprec)
+
+all <- data.frame(cbind(allLyme, alltemp, allprec))
+#head(all)
+
+
+ggscatter(all, x = "allprec", y = "allLyme", add = "reg.line", conf.int = TRUE, cor.coef = TRUE, cor.method = "pearson",xlab = "Avg Precipitation 92 to 11", ylab = "avg lyme Disease 92 to 11", main="Correlation Between Precipitation and Lyme Disease 1992 to 2011")
+
+#barplot(allprec, main = "Precipitation in state", xlab = "States")
+
+```
+
+***
+
+## Answers to the questions raised
+
+* __Has Lyme disease increased from 1992?(Overall and states)__
+
+  * The number of lime disease overall has increased by an average of 500 cases every 5 years
+
+  * The number of lime disease cases for the states has steadily increased throughout the years but there are years in which certain states will have a decrease in cases.
+
+  
+* __Which states have the highest rate of Lyme Disease?__
+
+  * New York and Pennsylvania have the highest cases during from 1992 to 2011
+
+  
+* __What changes have happened to the average temperature?__
+
+  * It stayed very close to each other, in the range of 61-63 degree fahrenheit. It did not change much with an overall average of about 63.5.
+
+  
+* __Is there any association with the rate of Lyme disease and the changes to temperature?__
+
+  * Around 60 degrees fahrenheit was the peak temperature throughout every year. That 55-65 degrees was the most dangerous for the high amount of cases of lyme diseases.
+
+  
+* __What changes have happened to the average precipitation?__
+
+  * The average precipitation has stayed mostly stable.
+  
+
+* __Is there any association with the rate of Lyme disease and the changes to precipitation?__
+
+  * we found that areas with lower temperatures and higher levels of precipitation were where most of the cases occurred. 
+
+  * States matching this description were mostly in the northeast.
+
+## Conclusion
+
+* In conclusion, Lyme disease increased a lot in the United States during those 20 years, and both temperature and precipitation played a big role in the growth of Lyme disease. For temperature, the average temperature in the United States during those 20 years didn't change much, but it stayed in the range of 60 to 65 degrees Fahrenheit, which is the optimal temperature range for lyme disease.In terms of precipitation, the average rainfall in the United States increased during those 20 years, and the incidence of Lyme disease was significantly higher in areas with high precipitation than in areas with low precipitation, so both temperature and precipitation contributed to the increase of Lymn disease.
