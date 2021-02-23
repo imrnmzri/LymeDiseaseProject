@@ -1,6 +1,6 @@
 # LymeDiseaseProject
 
-This project is created during my Data Science class (DS 202) in Iowa State University. The original repo for this project can be seen here: https://github.com/BinayaS/DS-202-Final-Project
+This project is created during my Data Science class (DS 202) in Iowa State University. The original repo for this project can be seen here: https://github.com/BinayaS/DS-202-Final-Project. The presentation for this project can be seen here: https://iastate.box.com/s/c74qtrj3brihtiwvfu533p2ypa3824s1
 
 The project is called "The Relationship Between Lyme Disease, Temperature, and Precipitation". Specifically, this project focuses on the history of the lyme disease from 1992-2011 that has been plaguing the United States for a while. Lyme disease is the most common vector-borne disease in the United States.
 
